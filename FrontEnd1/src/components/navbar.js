@@ -10,7 +10,7 @@ export function navbar() {
   const isLoggedIn = !!localStorage.getItem('token');
 
   const authButtonsDesktop = isLoggedIn ? `
-    <button data-route="/confirmation/demo" class="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">${icon('ticket')} My Tickets</button>
+    <button data-route="/mytickets" class="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">${icon('ticket')} My Tickets</button>
     <button data-action="logout" class="text-white/70 hover:text-red-400 px-3 py-2 text-sm transition-colors border border-white/10 rounded-lg hover:border-red-400">Logout</button>
   ` : `
     <button data-route="/login" class="text-white/70 hover:text-white px-3 py-2 text-sm transition-colors">Sign In</button>
@@ -18,7 +18,7 @@ export function navbar() {
   `;
 
   const authButtonsMobile = isLoggedIn ? `
-    <button data-route="/confirmation/demo" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm w-fit">${icon('ticket')} My Tickets</button>
+    <button data-route="/mytickets" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm w-fit">${icon('ticket')} My Tickets</button>
     <button data-action="logout" class="text-left text-red-400 text-sm">Logout</button>
   ` : `
     <button data-route="/login" class="text-left text-white/80 text-sm">Sign In</button>

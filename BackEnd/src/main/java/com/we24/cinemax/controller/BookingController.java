@@ -37,4 +37,18 @@ public class BookingController {
             );
         }
     }
+
+    @GetMapping("/my-tickets")
+    public ResponseEntity<?> getMyTickets(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getName().equals("anonymousUser")) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        
+        String email = authentication.getName();
+        try {
+            return ResponseEntity.ok(bookingService.getMyTickets(email));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

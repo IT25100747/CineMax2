@@ -150,6 +150,14 @@ function render() {
     return;
   }
 
+  // My Tickets Page
+  if (parts[0] === 'mytickets') {
+    import('./screens/mytickets.js').then(module => {
+      module.myTicketsPage();
+    });
+    return;
+  }
+
   // Page Not Found
   notFound('Page not found');
 }

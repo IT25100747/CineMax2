@@ -93,4 +93,33 @@ public class BookingServiceImpl implements BookingService {
                 .message("Booking completed successfully")
                 .build();
     }
+
+    @Override
+    public List<com.we24.cinemax.model.MyTicketResponse> getMyTickets(String gmail) {
+        List<Booking> bookings = bookingRepository.findByUser_GmailOrderByCreatedAtDesc(gmail);
+        return bookings.stream().map(booking -> {
+            List<String> seats = seatReservationRepository.findByBookingId(booking.getId())
+                    .stream()
+                    .filter(res -> "RESERVED".equals(res.getStatus()))
+                    .map(SeatReservation::getSeatNumber)
+                    .collect(Collectors.toList());
+
+            String showDate = booking.getScreenTime().getShowDate() != null ? booking.getScreenTime().getShowDate().toString() : "";
+            String showTime = booking.getScreenTime().getShowTime() != null ? booking.getScreenTime().getShowTime().toString() : "";
+            String hallName = "Hall " + booking.getScreenTime().getScreenNumber();
+            String screenType = "IMAX"; 
+
+            return com.we24.cinemax.model.MyTicketResponse.builder()
+                    .bookingId(booking.getBookingReference())
+                    .movieName(booking.getScreenTime().getMovie().getMovieName())
+                    .moviePoster(booking.getScreenTime().getMovie().getPosterUrl())
+                    .showDate(showDate)
+                    .showTime(showTime)
+                    .hallName(hallName)
+                    .screenType(screenType)
+                    .seats(seats)
+                    .totalPaid(booking.getTotalAmount())
+                    .build();
+        }).collect(Collectors.toList());
+    }
 }
