@@ -824,8 +824,16 @@ async function dashboardPage() {
   const movies = await getMovies();
   adminData.screenTimes = await getScreenTimes();
 
-  const revenue = adminData.bookings.reduce(
-    (sum, booking) => sum + Number(booking.amount.replace('$', '')),
+  let bookings = [];
+  try {
+    bookings = await getAdminBookings();
+    adminData.bookings = bookings;
+  } catch (error) {
+    console.error("Failed to load bookings for dashboard", error);
+  }
+
+  const revenue = bookings.reduce(
+    (sum, booking) => sum + Number(booking.totalAmount || 0),
     0
   );
 
@@ -851,9 +859,16 @@ async function dashboardPage() {
 
       <div class="bg-[#0d0d14] border border-white/10 rounded-2xl p-6">
         <h2 class="text-xl font-bold mb-4">Recent Bookings</h2>
-        ${table(
+        ${bookings.length === 0 ? emptyBox('No bookings yet') : table(
           ['ID', 'Movie', 'User', 'Seats', 'Amount', 'Status'],
-          adminData.bookings.map(b => [b.id, b.movie, b.user, b.seats, b.amount, b.status]),
+          bookings.slice(0, 5).map(b => [
+            b.bookingReference || b.id, 
+            b.movieName || '-', 
+            b.customerName || 'Guest', 
+            (b.seats && b.seats.length > 0) ? b.seats.join(', ') : '-', 
+            b.totalAmount ? '$' + b.totalAmount.toFixed(2) : '$0.00', 
+            b.status || '-'
+          ]),
           false
         )}
       </div>
@@ -1808,7 +1823,8 @@ function bindAdminEvents() {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      setRoute('/login');
+      setRoute('/');
+      window.location.reload();
     });
   }
 
