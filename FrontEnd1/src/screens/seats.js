@@ -238,6 +238,17 @@ export async function seatsPage(screenTimeId, query = '') {
     const backendMovie = await movieResponse.json();
     const screenNumber = screenTime.screenNumber || 1;
 
+    // Fetch reserved seats
+    let reservedSeats = [];
+    try {
+      const seatsResponse = await fetch(`${API_BASE_URL}/api/screentimes/${screenTimeId}/seats`);
+      if (seatsResponse.ok) {
+        reservedSeats = await seatsResponse.json();
+      }
+    } catch (e) {
+      console.warn('Failed to fetch reserved seats', e);
+    }
+
     const movie = {
       id: backendMovie.id,
       title: backendMovie.movieName,
@@ -255,7 +266,7 @@ export async function seatsPage(screenTimeId, query = '') {
       ticketPrice: screenTime.ticketPrice ?? 12
     };
 
-    renderSeats(movie, showtime);
+    renderSeats(movie, showtime, reservedSeats);
 
   } catch (error) {
     console.error(error);
@@ -314,10 +325,15 @@ function startOfDay(date) {
   return copy;
 }
 
-function renderSeats(movie, showtime) {
+function renderSeats(movie, showtime, reservedSeats = []) {
   if (!state.seats[showtime.id]) {
     state.seats[showtime.id] = generateSeats(showtime.id);
   }
+
+  // Ensure reserved seats from backend are marked as taken
+  reservedSeats.forEach(seat => {
+    state.seats[showtime.id][seat] = 'taken';
+  });
 
   const seats = state.seats[showtime.id];
   const selected = Object.keys(seats).filter(k => seats[k] === 'selected');
@@ -445,7 +461,8 @@ function renderSeats(movie, showtime) {
         ? (['A', 'B'].includes(key[0]) ? 'vip' : 'available')
         : 'selected';
 
-      renderSeats(movie, showtime);
+      // Re-render, we don't need to pass reservedSeats again since they are already applied to state
+      renderSeats(movie, showtime, []);
     });
   });
 

@@ -18,4 +18,6 @@ public interface ScreenTimeService {
     void deleteScreenTime(Long id);
 
     List<ScreenTimeResponse> getScreenTimesByMovie(Long movieId);
+
+    List<String> getReservedSeats(Long screenTimeId);
 }

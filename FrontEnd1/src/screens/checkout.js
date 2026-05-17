@@ -78,6 +78,34 @@ export async function checkoutPage(showtimeId, query) {
     const serviceFee = 1.99;
     const finalTotal = ticketsTotal + serviceFee;
 
+    const token = localStorage.getItem('token');
+    const isLoggedIn = !!token;
+
+    let personalInfoHtml = '';
+    if (!isLoggedIn) {
+      personalInfoHtml = `
+            <!-- Personal Information -->
+            <div class="bg-[#15151a] border border-white/10 rounded-2xl p-6" id="personalInfoSection">
+              <h2 class="font-bold text-xl mb-5 flex items-center gap-2">
+                ${icon('ticket', 'w-5 h-5 text-red-500')} Personal Information
+              </h2>
+              <div class="space-y-4">
+                <label class="block text-sm text-white/60">
+                  Full Name
+                  <input id="guestName" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="John Doe">
+                </label>
+                <label class="block text-sm text-white/60">
+                  Email Address
+                  <input id="guestEmail" type="email" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="john@example.com">
+                </label>
+                <label class="block text-sm text-white/60">
+                  Phone Number
+                  <input id="guestPhone" type="tel" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="+1 234 567 8900">
+                </label>
+              </div>
+            </div>`;
+    }
+
     const content = `
     <section class="pt-24 pb-16 px-4 min-h-screen">
       <div class="max-w-6xl mx-auto">
@@ -94,26 +122,7 @@ export async function checkoutPage(showtimeId, query) {
           <!-- Left Column -->
           <div class="space-y-6">
             
-            <!-- Personal Information -->
-            <div class="bg-[#15151a] border border-white/10 rounded-2xl p-6">
-              <h2 class="font-bold text-xl mb-5 flex items-center gap-2">
-                ${icon('ticket', 'w-5 h-5 text-red-500')} Personal Information
-              </h2>
-              <div class="space-y-4">
-                <label class="block text-sm text-white/60">
-                  Full Name
-                  <input class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="John Doe">
-                </label>
-                <label class="block text-sm text-white/60">
-                  Email Address
-                  <input class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="john@example.com">
-                </label>
-                <label class="block text-sm text-white/60">
-                  Phone Number
-                  <input class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors" placeholder="+1 234 567 8900">
-                </label>
-              </div>
-            </div>
+            ${personalInfoHtml}
 
             <!-- Payment Details -->
             <div class="bg-[#15151a] border border-white/10 rounded-2xl p-6">
@@ -123,16 +132,16 @@ export async function checkoutPage(showtimeId, query) {
               <div class="space-y-4">
                 <label class="block text-sm text-white/60">
                   Card Number
-                  <input placeholder="1234 5678 9012 3456" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 font-mono tracking-widest transition-colors">
+                  <input id="cardNumber" placeholder="1234 5678 9012 3456" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 font-mono tracking-widest transition-colors">
                 </label>
                 <div class="grid grid-cols-2 gap-4">
                   <label class="block text-sm text-white/60">
                     Expiry
-                    <input placeholder="MM/YY" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors">
+                    <input id="cardExpiry" placeholder="MM/YY" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors">
                   </label>
                   <label class="block text-sm text-white/60">
                     CVV
-                    <input placeholder="123" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors">
+                    <input id="cardCvv" type="password" placeholder="123" class="mt-2 w-full rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors">
                   </label>
                 </div>
                 <div class="flex items-center gap-2 mt-4 text-white/40 text-xs">
@@ -209,8 +218,72 @@ export async function checkoutPage(showtimeId, query) {
 
     renderLayout(content);
 
-    const handlePay = () => {
-      setRoute(`/confirmation/${Date.now().toString().slice(-6)}?movie=${movie.id}&showtime=${showtime.id}&seats=${seats.join(',')}&total=${finalTotal.toFixed(2)}`);
+    const handlePay = async (e) => {
+      const btn = e.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Processing...';
+      btn.disabled = true;
+
+      try {
+        const guestName = document.getElementById('guestName')?.value || '';
+        const guestEmail = document.getElementById('guestEmail')?.value || '';
+        const guestPhone = document.getElementById('guestPhone')?.value || '';
+        const cardNumber = document.getElementById('cardNumber')?.value || '';
+        const cardExpiry = document.getElementById('cardExpiry')?.value || '';
+        const cardCvv = document.getElementById('cardCvv')?.value || '';
+
+        if (!isLoggedIn && (!guestName || !guestEmail)) {
+          alert('Please fill in your personal information.');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        if (!cardNumber || !cardExpiry || !cardCvv) {
+          alert('Please fill in your payment details.');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        const payload = {
+          screenTimeId: Number(showtime.id),
+          seatNumbers: seats,
+          totalAmount: finalTotal,
+          guestName,
+          guestEmail,
+          guestPhone,
+          cardNumber,
+          cardExpiry,
+          cardCvv,
+          paymentMethod: 'CREDIT_CARD'
+        };
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/bookings/checkout`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Payment failed');
+        }
+
+        setRoute(`/confirmation/${result.bookingReference}?movie=${movie.id}&showtime=${showtime.id}&seats=${seats.join(',')}&total=${finalTotal.toFixed(2)}`);
+
+      } catch (err) {
+        console.error(err);
+        alert('Booking error: ' + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
     };
 
     const payBtn = document.getElementById('payBtn');

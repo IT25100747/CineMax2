@@ -19,6 +19,7 @@ public class ScreenTimeServiceImpl implements ScreenTimeService {
 
     private final ScreenTimeRepository screenTimeRepository;
     private final MovieRepository movieRepository;
+    private final com.we24.cinemax.repository.SeatReservationRepository seatReservationRepository;
 
     @Override
     public ScreenTimeResponse createScreenTime(ScreenTimeRequest request) {
@@ -85,6 +86,15 @@ public class ScreenTimeServiceImpl implements ScreenTimeService {
         return screenTimeRepository.findByMovieId(movieId)
                 .stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getReservedSeats(Long screenTimeId) {
+        return seatReservationRepository.findByScreenTimeId(screenTimeId)
+                .stream()
+                .filter(res -> res.getStatus().equals("RESERVED"))
+                .map(com.we24.cinemax.entity.SeatReservation::getSeatNumber)
                 .collect(Collectors.toList());
     }
 

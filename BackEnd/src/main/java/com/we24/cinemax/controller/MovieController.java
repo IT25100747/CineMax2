@@ -61,6 +61,12 @@ public class MovieController {
         return ResponseEntity.ok(screenTimeService.getScreenTimeById(id));
     }
 
+    // Public API - reserved seats for a showtime
+    @GetMapping("/screentimes/{id}/seats")
+    public ResponseEntity<List<String>> getReservedSeats(@PathVariable Long id) {
+        return ResponseEntity.ok(screenTimeService.getReservedSeats(id));
+    }
+
     // Admin API - add movie
     @PostMapping("/admin/movies")
     public ResponseEntity<MovieResponse> addMovie(@RequestBody MovieRequest request) {

@@ -1,0 +1,40 @@
+package com.we24.cinemax.controller;
+
+import com.we24.cinemax.model.CheckoutRequest;
+import com.we24.cinemax.model.CheckoutResponse;
+import com.we24.cinemax.service.BookingService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/bookings")
+@RequiredArgsConstructor
+public class BookingController {
+
+    private final BookingService bookingService;
+
+    @PostMapping("/checkout")
+    public ResponseEntity<CheckoutResponse> checkout(
+            @RequestBody CheckoutRequest request,
+            Authentication authentication
+    ) {
+        String email = null;
+        if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
+            email = authentication.getName(); // In our JWT setup, name is usually the email/username
+        }
+        
+        try {
+            CheckoutResponse response = bookingService.processBooking(request, email);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    CheckoutResponse.builder()
+                            .status("FAILED")
+                            .message(e.getMessage())
+                            .build()
+            );
+        }
+    }
+}

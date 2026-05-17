@@ -1,0 +1,96 @@
+package com.we24.cinemax.service;
+
+import com.we24.cinemax.entity.*;
+import com.we24.cinemax.model.CheckoutRequest;
+import com.we24.cinemax.model.CheckoutResponse;
+import com.we24.cinemax.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class BookingServiceImpl implements BookingService {
+
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
+    private final SeatReservationRepository seatReservationRepository;
+    private final ScreenTimeRepository screenTimeRepository;
+    private final UserRepository userRepository;
+
+    @Override
+    @Transactional
+    public CheckoutResponse processBooking(CheckoutRequest request, String userEmail) {
+        // 1. Fetch ScreenTime
+        ScreenTime screenTime = screenTimeRepository.findById(request.getScreenTimeId())
+                .orElseThrow(() -> new RuntimeException("ScreenTime not found"));
+
+        // 2. Fetch User if authenticated
+        User user = null;
+        if (userEmail != null && !userEmail.isEmpty()) {
+            user = userRepository.findByGmail(userEmail).orElse(null);
+        }
+
+        // 3. Verify Seats are not already booked
+        List<SeatReservation> existingReservations = seatReservationRepository.findByScreenTimeId(screenTime.getId());
+        List<String> bookedSeats = existingReservations.stream()
+                .filter(res -> res.getStatus().equals("RESERVED"))
+                .map(SeatReservation::getSeatNumber)
+                .collect(Collectors.toList());
+
+        for (String requestedSeat : request.getSeatNumbers()) {
+            if (bookedSeats.contains(requestedSeat)) {
+                throw new RuntimeException("Seat " + requestedSeat + " is already booked.");
+            }
+        }
+
+        // 4. Create Booking
+        String bookingRef = "BKG-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        Booking booking = Booking.builder()
+                .bookingReference(bookingRef)
+                .user(user)
+                .guestName(user != null ? user.getFullName() : request.getGuestName())
+                .guestEmail(user != null ? user.getGmail() : request.getGuestEmail())
+                .guestPhone(user != null ? user.getPhoneNumber() : request.getGuestPhone())
+                .screenTime(screenTime)
+                .totalAmount(request.getTotalAmount())
+                .status("CONFIRMED")
+                .build();
+        booking = bookingRepository.save(booking);
+
+        // 5. Create Seat Reservations
+        for (String seatNum : request.getSeatNumbers()) {
+            SeatReservation reservation = SeatReservation.builder()
+                    .booking(booking)
+                    .screenTime(screenTime)
+                    .seatNumber(seatNum)
+                    .status("RESERVED")
+                    .build();
+            seatReservationRepository.save(reservation);
+        }
+
+        // 6. Process Payment (Mock)
+        Payment payment = Payment.builder()
+                .booking(booking)
+                .transactionId("TXN-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase())
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CREDIT_CARD")
+                .paidAmount(request.getTotalAmount())
+                .paymentStatus("SUCCESS")
+                .paymentTimestamp(LocalDateTime.now())
+                .build();
+        paymentRepository.save(payment);
+
+        // 7. Return Response
+        return CheckoutResponse.builder()
+                .bookingId(booking.getId())
+                .bookingReference(bookingRef)
+                .status("SUCCESS")
+                .message("Booking completed successfully")
+                .build();
+    }
+}
