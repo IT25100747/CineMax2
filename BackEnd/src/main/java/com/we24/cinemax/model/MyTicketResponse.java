@@ -17,4 +17,5 @@ public class MyTicketResponse {
     private List<String> seats;
     private Double totalPaid;
     private String qrCodeData;
+    private String movieStatus;
 }

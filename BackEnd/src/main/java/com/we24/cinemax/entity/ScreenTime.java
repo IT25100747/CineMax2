@@ -26,6 +26,10 @@ public class ScreenTime {
     private Integer screenNumber;
 
     private Double ticketPrice;
+    
+    @Column(nullable = false)
+    @Builder.Default
+    private String status = "ACTIVE";
 
     // Many screen times belong to one movie
     @ManyToOne

@@ -107,6 +107,7 @@ public class ScreenTimeServiceImpl implements ScreenTimeService {
                 .showTime(screenTime.getShowTime())
                 .screenNumber(screenTime.getScreenNumber())
                 .ticketPrice(screenTime.getTicketPrice())
+                .status(screenTime.getStatus())
                 .build();
     }
 }

@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser_GmailOrderByCreatedAtDesc(String gmail);
     Optional<Booking> findByBookingReference(String bookingReference);
+    boolean existsByScreenTime_Movie_Id(Long movieId);
 }

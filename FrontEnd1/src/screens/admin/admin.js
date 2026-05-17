@@ -2188,7 +2188,7 @@ function statusBadge(status) {
     styles = 'bg-green-500/20 text-green-300';
   }
 
-  if (status === 'NOT_SHOWING') {
+  if (status === 'NOT_SHOWING' || status === 'INACTIVE' || status === 'CANCELLED') {
     styles = 'bg-red-500/20 text-red-300';
   }
 

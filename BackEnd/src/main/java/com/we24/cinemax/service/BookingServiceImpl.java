@@ -119,6 +119,7 @@ public class BookingServiceImpl implements BookingService {
                     .screenType(screenType)
                     .seats(seats)
                     .totalPaid(booking.getTotalAmount())
+                    .movieStatus(booking.getScreenTime().getMovie().getStatus())
                     .build();
         }).collect(Collectors.toList());
     }
@@ -153,6 +154,7 @@ public class BookingServiceImpl implements BookingService {
                 .screenType(screenType)
                 .seats(seats)
                 .totalPaid(booking.getTotalAmount())
+                .movieStatus(booking.getScreenTime().getMovie().getStatus())
                 .qrCodeData(qrData)
                 .build();
     }

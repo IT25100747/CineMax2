@@ -309,12 +309,17 @@ export async function detailPage(id) {
     }
 
     const backendMovie = await movieResponse.json();
+    
+    if (backendMovie.status === 'INACTIVE') {
+      return notFound('Movie is no longer available for booking');
+    }
+
     const backendScreenTimes = await fetchScreenTimes(id);
 
     detailContext = {
       movieId: String(id),
       movie: convertBackendMovie(backendMovie),
-      screenTimes: backendScreenTimes.map(mapScreenTime)
+      screenTimes: backendScreenTimes.filter(st => st.status !== 'CANCELLED').map(mapScreenTime)
     };
 
     ensureSelectedDate(detailContext.screenTimes);

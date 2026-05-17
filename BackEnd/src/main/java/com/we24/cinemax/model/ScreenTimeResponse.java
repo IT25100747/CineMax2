@@ -23,4 +23,6 @@ public class ScreenTimeResponse {
     private Integer screenNumber;
 
     private Double ticketPrice;
+    
+    private String status;
 }

@@ -11,18 +11,30 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import com.we24.cinemax.repository.BookingRepository;
+import com.we24.cinemax.repository.ScreenTimeRepository;
+import com.we24.cinemax.entity.ScreenTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Service
 public class MovieServiceImpl implements MovieService {
 
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final ScreenTimeRepository screenTimeRepository;
 
     public MovieServiceImpl(
             MovieRepository movieRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            BookingRepository bookingRepository,
+            ScreenTimeRepository screenTimeRepository
     ) {
         this.movieRepository = movieRepository;
         this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
+        this.screenTimeRepository = screenTimeRepository;
     }
 
     @Override
@@ -77,14 +89,35 @@ public class MovieServiceImpl implements MovieService {
     public void deleteMovie(Long id) {
         checkAdmin();
 
-        if (!movieRepository.existsById(id)) {
-            throw new RuntimeException("Movie not found");
-        }
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
 
-        try {
-            movieRepository.deleteById(id);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new RuntimeException("Cannot delete movie because it has associated screen times or bookings.");
+        boolean hasBookings = bookingRepository.existsByScreenTime_Movie_Id(id);
+
+        if (hasBookings) {
+            // Soft delete
+            movie.setStatus("INACTIVE");
+            movieRepository.save(movie);
+
+            List<ScreenTime> screenTimes = screenTimeRepository.findByMovieId(id);
+            LocalDate today = LocalDate.now();
+            LocalTime now = LocalTime.now();
+
+            for (ScreenTime st : screenTimes) {
+                if (st.getShowDate() != null && st.getShowTime() != null) {
+                    if (st.getShowDate().isAfter(today) || (st.getShowDate().isEqual(today) && st.getShowTime().isAfter(now))) {
+                        st.setStatus("CANCELLED");
+                        screenTimeRepository.save(st);
+                    }
+                }
+            }
+        } else {
+            // Hard delete
+            try {
+                movieRepository.deleteById(id);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                throw new RuntimeException("Cannot delete movie because it has associated screen times or bookings.");
+            }
         }
     }
 
