@@ -100,8 +100,10 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/movies",
-                                "/api/movies/**",
-                                "/api/screentimes/**",
+                                "/api/movies/*",
+                                "/api/movies/*/screentimes",
+                                "/api/screentimes",
+                                "/api/screentimes/*",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"

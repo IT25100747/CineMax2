@@ -309,14 +309,12 @@ export async function detailPage(id) {
     }
 
     const backendMovie = await movieResponse.json();
-    const rawScreenTimes = Array.isArray(backendMovie.screenTimes)
-      ? backendMovie.screenTimes
-      : await fetchScreenTimes(id);
+    const backendScreenTimes = await fetchScreenTimes(id);
 
     detailContext = {
       movieId: String(id),
       movie: convertBackendMovie(backendMovie),
-      screenTimes: rawScreenTimes.map(mapScreenTime)
+      screenTimes: backendScreenTimes.map(mapScreenTime)
     };
 
     ensureSelectedDate(detailContext.screenTimes);
@@ -359,15 +357,15 @@ function renderMovieDetail() {
   const dateOptions = buildDateOptions(screenTimes);
   const dates = dateOptions.map(d => `
     <button
-      class="dateBtn px-4 py-3 rounded-xl border text-left min-w-[88px] ${
+      class="dateBtn px-4 py-3 rounded-xl border text-center min-w-[88px] flex flex-col items-center justify-center transition-colors ${
         state.selectedDate === d.value
           ? 'bg-red-600 border-red-500 text-white'
-          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+          : 'bg-[#15151a] border-white/10 text-white/60 hover:text-white hover:bg-white/10'
       }"
       data-date="${d.value}"
     >
-      <span class="block text-xs">${safe(d.label)}</span>
-      <b>${safe(d.display)}</b>
+      <span class="block text-sm font-semibold mb-1">${safe(d.label)}</span>
+      <b class="text-lg whitespace-nowrap">${safe(d.display)}</b>
     </button>
   `).join('');
 
@@ -461,31 +459,31 @@ function renderMovieDetail() {
         }
       </div>
 
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         ${
           showtimes.length
             ? showtimes.map(show => `
               <button
                 data-route="/seats/${show.id}"
-                class="text-left bg-[#0d0d14] hover:bg-white/10 border border-white/10 hover:border-red-500/60 rounded-2xl p-5 transition"
+                class="text-left bg-[#1a1a24] hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl p-5 transition flex flex-col justify-between min-h-[140px]"
               >
-                <div class="flex justify-between items-start">
-                  <div>
-                    <p class="font-bold text-xl">${safe(show.time)}</p>
-                    <p class="text-white/45 text-sm mt-1">
-                      ${safe(show.hall)} · ${safe(show.format)}
-                    </p>
+                <div>
+                  <p class="font-bold text-2xl text-white">${safe(show.time)}</p>
+                  <p class="text-white/60 text-sm mt-1">${safe(show.hall)}</p>
+                  <div class="mt-3">
+                    <span class="inline-block bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full">${safe(show.format)}</span>
                   </div>
-                  <span class="text-red-400">${icon('chevron')}</span>
                 </div>
-                <div class="mt-4 flex items-center justify-between text-xs text-white/45">
-                  <span>${show.availableSeats} seats available</span>
-                  <span>${money(show.ticketPrice)}</span>
+                <div class="mt-5 flex items-center justify-between w-full">
+                  <span class="text-white/60 text-sm font-medium">${money(show.ticketPrice)}/seat</span>
+                  <span class="text-amber-500 text-sm flex items-center gap-1.5 font-semibold">
+                    ${icon('users')} ${show.availableSeats}
+                  </span>
                 </div>
               </button>
             `).join('')
             : `
-              <div class="col-span-full text-white/45 border border-white/10 rounded-2xl p-8 text-center">
+              <div class="col-span-full text-white/45 border border-white/10 rounded-2xl p-8 text-center bg-[#15151a]">
                 No showtimes for this date.
               </div>
             `

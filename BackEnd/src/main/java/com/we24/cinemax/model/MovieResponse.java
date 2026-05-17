@@ -2,8 +2,6 @@ package com.we24.cinemax.model;
 
 import com.we24.cinemax.entity.Movie;
 
-import java.util.List;
-
 public class MovieResponse {
 
     private Long id;
@@ -15,7 +13,6 @@ public class MovieResponse {
     private String description;
     private String cast;
     private String posterUrl;
-    private List<ScreenTimeResponse> screenTimes;
 
     public MovieResponse(Movie movie) {
         this.id = movie.getId();
@@ -63,13 +60,5 @@ public class MovieResponse {
 
     public String getPosterUrl() {
         return posterUrl;
-    }
-
-    public List<ScreenTimeResponse> getScreenTimes() {
-        return screenTimes;
-    }
-
-    public void setScreenTimes(List<ScreenTimeResponse> screenTimes) {
-        this.screenTimes = screenTimes;
     }
 }

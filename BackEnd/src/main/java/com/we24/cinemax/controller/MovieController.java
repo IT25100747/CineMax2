@@ -43,12 +43,10 @@ public class MovieController {
         return ResponseEntity.ok(screenTimeService.getScreenTimeById(id));
     }
 
-    // Public API - users can see one movie (includes showtimes for detail page)
+    // Public API - users can see one movie
     @GetMapping("/movies/{id}")
     public ResponseEntity<MovieResponse> getMovieById(@PathVariable Long id) {
-        MovieResponse movie = movieService.getMovieById(id);
-        movie.setScreenTimes(screenTimeService.getScreenTimesByMovie(id));
-        return ResponseEntity.ok(movie);
+        return ResponseEntity.ok(movieService.getMovieById(id));
     }
 
     // Public API - showtimes for a movie (nested path)
