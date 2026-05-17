@@ -1762,7 +1762,7 @@ function showAddScreenTimeModal(screenTime = null) {
 
       const matchedMovie = movies.find(
         movie =>
-          movie.movieName.toLowerCase() === movieName.toLowerCase()
+          movie.movieName && movieName && movie.movieName.toLowerCase() === movieName.toLowerCase()
       );
 
       if (!matchedMovie) {
@@ -1845,8 +1845,9 @@ function bindAdminEvents() {
 
       if (!tableBody) return;
 
-      const filtered = adminData.screenTimes.filter(st =>
-        st.movieName.toLowerCase().includes(searchTerm)
+      const filtered = adminData.screenTimes.filter(st => 
+        (st.movieName && st.movieName.toLowerCase().includes(searchTerm)) ||
+        (st.hall && st.hall.toString().toLowerCase().includes(searchTerm))
       );
 
       tableBody.innerHTML = renderScreenTimeRows(filtered, searchTerm);

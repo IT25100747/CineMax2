@@ -32,9 +32,12 @@ public class MovieServiceImpl implements MovieService {
         Movie movie = new Movie();
         setMovieData(movie, request);
 
-        Movie savedMovie = movieRepository.save(movie);
-
-        return new MovieResponse(savedMovie);
+        try {
+            Movie savedMovie = movieRepository.save(movie);
+            return new MovieResponse(savedMovie);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new RuntimeException("Cannot add movie. Please check if the fields are too long or invalid.");
+        }
     }
 
     @Override
@@ -62,9 +65,12 @@ public class MovieServiceImpl implements MovieService {
 
         setMovieData(movie, request);
 
-        Movie updatedMovie = movieRepository.save(movie);
-
-        return new MovieResponse(updatedMovie);
+        try {
+            Movie updatedMovie = movieRepository.save(movie);
+            return new MovieResponse(updatedMovie);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new RuntimeException("Cannot update movie. Please check if the fields are too long or invalid.");
+        }
     }
 
     @Override
@@ -75,7 +81,11 @@ public class MovieServiceImpl implements MovieService {
             throw new RuntimeException("Movie not found");
         }
 
-        movieRepository.deleteById(id);
+        try {
+            movieRepository.deleteById(id);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new RuntimeException("Cannot delete movie because it has associated screen times or bookings.");
+        }
     }
 
     private void setMovieData(Movie movie, MovieRequest request) {
