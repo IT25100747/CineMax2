@@ -158,9 +158,10 @@ export async function checkoutPage(showtimeId, query) {
                 Promo Code
               </h2>
               <div class="flex gap-3">
-                <input placeholder="Enter promo code (try CINE10)" class="flex-1 rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors">
-                <button class="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 rounded-xl transition-colors">Apply</button>
+                <input id="promoInput" placeholder="Enter promo code (try CINE10)" class="flex-1 rounded-xl bg-[#1a1a24] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 transition-colors uppercase">
+                <button id="applyPromoBtn" class="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 rounded-xl transition-colors">Apply</button>
               </div>
+              <div id="promoMessage" class="mt-3 text-sm hidden"></div>
             </div>
 
             <!-- Pay Button (Mobile) -->
@@ -201,9 +202,13 @@ export async function checkoutPage(showtimeId, query) {
                   <span>Service Fee</span>
                   <span>+${money(serviceFee)}</span>
                 </div>
+                <div id="discountRow" class="flex justify-between items-center text-green-400 hidden">
+                  <span>Discount</span>
+                  <span id="discountAmountSpan">-$0.00</span>
+                </div>
                 <div class="flex justify-between items-center text-xl pt-4 border-t border-white/10">
                   <span class="font-bold text-white">Total</span>
-                  <span class="font-bold text-white">${money(finalTotal)}</span>
+                  <span id="summaryTotalSpan" class="font-bold text-white">${money(finalTotal)}</span>
                 </div>
               </div>
             </div>
@@ -217,6 +222,56 @@ export async function checkoutPage(showtimeId, query) {
     </section>`;
 
     renderLayout(content);
+
+    let currentPromoCode = '';
+    let currentDiscount = 0;
+    let currentTotal = finalTotal;
+
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    const promoInput = document.getElementById('promoInput');
+    const promoMessage = document.getElementById('promoMessage');
+
+    applyPromoBtn?.addEventListener('click', async () => {
+      const code = promoInput.value.trim().toUpperCase();
+      if (!code) return;
+
+      applyPromoBtn.disabled = true;
+      applyPromoBtn.textContent = '...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/promo-codes/validate?code=${code}`);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText);
+        }
+        const data = await res.json();
+        
+        currentPromoCode = data.code;
+        currentDiscount = (finalTotal * (data.discountPercentage / 100));
+        currentTotal = finalTotal - currentDiscount;
+
+        // Update UI
+        promoMessage.textContent = `${data.discountPercentage}% discount applied successfully!`;
+        promoMessage.className = 'mt-3 text-sm text-green-400 block font-medium';
+        
+        document.getElementById('discountRow').classList.remove('hidden');
+        document.getElementById('discountAmountSpan').textContent = `-${money(currentDiscount)}`;
+        document.getElementById('summaryTotalSpan').textContent = money(currentTotal);
+        
+        const payBtnMobile = document.getElementById('payBtnMobile');
+        const payBtn = document.getElementById('payBtn');
+        if (payBtnMobile) payBtnMobile.innerHTML = `Pay ${money(currentTotal)} <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>`;
+        if (payBtn) payBtn.innerHTML = `Pay ${money(currentTotal)} <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>`;
+
+        promoInput.disabled = true;
+        applyPromoBtn.textContent = 'Applied';
+      } catch (e) {
+        promoMessage.textContent = e.message || 'Invalid promo code';
+        promoMessage.className = 'mt-3 text-sm text-red-400 block font-medium';
+        applyPromoBtn.disabled = false;
+        applyPromoBtn.textContent = 'Apply';
+      }
+    });
 
     const handlePay = async (e) => {
       const btn = e.currentTarget;
@@ -249,7 +304,8 @@ export async function checkoutPage(showtimeId, query) {
         const payload = {
           screenTimeId: Number(showtime.id),
           seatNumbers: seats,
-          totalAmount: finalTotal,
+          totalAmount: currentTotal,
+          promoCode: currentPromoCode,
           guestName,
           guestEmail,
           guestPhone,
@@ -276,7 +332,7 @@ export async function checkoutPage(showtimeId, query) {
           throw new Error(result.message || 'Payment failed');
         }
 
-        setRoute(`/confirmation/${result.bookingReference}?movie=${movie.id}&showtime=${showtime.id}&seats=${seats.join(',')}&total=${finalTotal.toFixed(2)}`);
+        setRoute(`/confirmation/${result.bookingReference}?movie=${movie.id}&showtime=${showtime.id}&seats=${seats.join(',')}&total=${currentTotal.toFixed(2)}`);
 
       } catch (err) {
         console.error(err);

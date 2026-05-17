@@ -782,6 +782,7 @@ export async function adminPage(page = 'dashboard') {
             ${navItem('screenTimes', 'Screen Times', page)}
             ${navItem('bookings', 'Bookings', page)}
             ${navItem('halls', 'Halls', page)}
+            ${navItem('promoCodes', 'Promo Codes', page)}
           </nav>
 
           <button id="logoutBtn" class="w-full mt-10 bg-white/10 hover:bg-white/20 py-3 rounded-xl font-semibold">
@@ -814,6 +815,8 @@ async function renderContent(page) {
       return await bookingsPage();
     case 'halls':
       return hallsPage();
+    case 'promoCodes':
+      return await promoCodesPage();
     default:
       return await dashboardPage();
   }
@@ -2374,3 +2377,220 @@ async function loadSeatMapForAdmin(booking, closeFn) {
     `;
   }
 }
+
+// --- Promo Codes Admin ---
+
+async function getPromoCodes() {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}/api/promo-codes`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) throw new Error('Failed to load promo codes');
+  return await response.json();
+}
+
+async function createPromoCode(data) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}/api/promo-codes`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error);
+  }
+  return await response.json();
+}
+
+async function updatePromoCode(id, data) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}/api/promo-codes/${id}`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error);
+  }
+  return await response.json();
+}
+
+async function deletePromoCodeAPI(id) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}/api/promo-codes/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) throw new Error('Failed to delete promo code');
+}
+
+async function promoCodesPage() {
+  try {
+    const promoCodes = await getPromoCodes();
+    adminData.promoCodes = promoCodes; // Cache for edit
+
+    let tableRows = promoCodes.map(p => `
+      <tr class="border-b border-white/5 hover:bg-white/5 transition">
+        <td class="px-5 py-4 whitespace-nowrap text-white font-medium">${safe(p.code)}</td>
+        <td class="px-5 py-4 whitespace-nowrap text-white/70">${p.discountPercentage}%</td>
+        <td class="px-5 py-4 whitespace-nowrap text-white/70">${safe(p.expiryDate)}</td>
+        <td class="px-5 py-4 whitespace-nowrap">${statusBadge(p.status)}</td>
+        <td class="px-5 py-4 whitespace-nowrap text-white/70">${p.createdAt ? p.createdAt.slice(0, 10) : '-'}</td>
+        <td class="px-5 py-4 whitespace-nowrap">
+          <div class="flex gap-2">
+            <button class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition" onclick="showPromoCodeModal(${p.id})">Edit</button>
+            <button class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition" onclick="deletePromoCode(${p.id})">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    if (promoCodes.length === 0) {
+      tableRows = `<tr><td colspan="6" class="px-5 py-8 text-center text-white/50">No promo codes found</td></tr>`;
+    }
+
+    const tableHTML = `
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-white/10">
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Code</th>
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Discount</th>
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Expiry Date</th>
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Status</th>
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Created</th>
+            <th class="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    `;
+
+    return `
+      <div class="flex justify-between items-end mb-8">
+        <div>
+          <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">Promo Codes</h1>
+          <p class="text-white/60">Manage your discount promo codes</p>
+        </div>
+        <button class="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-red-500/20" onclick="showPromoCodeModal()">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+          Add Promo Code
+        </button>
+      </div>
+
+      <div class="bg-[#0d0d14] border border-white/10 rounded-2xl overflow-x-auto">
+        ${tableHTML}
+      </div>
+    `;
+  } catch (error) {
+    return `<div class="text-red-500 p-5 font-bold">Error loading promo codes: ${error.message}</div>`;
+  }
+}
+
+window.showPromoCodeModal = function(id = null) {
+  const isEditing = !!id;
+  let promoCode = { code: '', discountPercentage: '', expiryDate: '', status: 'ACTIVE' };
+  
+  if (isEditing) {
+    promoCode = adminData.promoCodes.find(p => p.id === id) || promoCode;
+  }
+
+  const modalHTML = `
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-[#1a1a24] border border-white/20 rounded-2xl w-full max-w-md p-8 shadow-2xl animate-in fade-in zoom-in-95">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-white">${isEditing ? 'Edit Promo Code' : 'Add Promo Code'}</h2>
+          <button onclick="document.getElementById('modalContainer').innerHTML=''" class="text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <form id="promoCodeForm" class="space-y-4">
+          <div id="promoError" class="hidden bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-3 rounded-xl text-sm font-medium"></div>
+          
+          <div>
+            <label class="block text-sm text-white/60 mb-2">Promo Code Name</label>
+            <input type="text" id="promoCodeInput" value="${safe(promoCode.code)}" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500 uppercase" placeholder="e.g. CINE10" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-white/60 mb-2">Discount Percentage (%)</label>
+            <input type="number" id="promoDiscountInput" value="${safe(promoCode.discountPercentage)}" min="1" max="100" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500" placeholder="10" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-white/60 mb-2">Expiry Date</label>
+            <input type="date" id="promoExpiryInput" value="${safe(promoCode.expiryDate)}" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-white/60 mb-2">Status</label>
+            <select id="promoStatusInput" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white outline-none focus:border-red-500">
+              <option value="ACTIVE" ${promoCode.status === 'ACTIVE' ? 'selected' : ''}>Active</option>
+              <option value="EXPIRED" ${promoCode.status === 'EXPIRED' ? 'selected' : ''}>Expired</option>
+              <option value="DISABLED" ${promoCode.status === 'DISABLED' ? 'selected' : ''}>Disabled</option>
+            </select>
+          </div>
+
+          <button type="submit" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-red-500/20 mt-6">
+            ${isEditing ? 'Save Changes' : 'Create Promo Code'}
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modalContainer').innerHTML = modalHTML;
+
+  document.getElementById('promoCodeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const errDiv = document.getElementById('promoError');
+    errDiv.classList.add('hidden');
+    
+    const data = {
+      code: document.getElementById('promoCodeInput').value.trim(),
+      discountPercentage: parseFloat(document.getElementById('promoDiscountInput').value),
+      expiryDate: document.getElementById('promoExpiryInput').value,
+      status: document.getElementById('promoStatusInput').value
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      if (isEditing) {
+        await updatePromoCode(id, data);
+      } else {
+        await createPromoCode(data);
+      }
+      document.getElementById('modalContainer').innerHTML = '';
+      refreshAdminPage('promoCodes');
+    } catch (error) {
+      errDiv.textContent = error.message || 'Failed to save promo code';
+      errDiv.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = isEditing ? 'Save Changes' : 'Create Promo Code';
+    }
+  });
+};
+
+window.deletePromoCode = async function(id) {
+  if (!confirm('Are you sure you want to permanently delete this promo code?')) return;
+  
+  try {
+    await deletePromoCodeAPI(id);
+    refreshAdminPage('promoCodes');
+  } catch (error) {
+    alert(error.message);
+  }
+};

@@ -22,6 +22,7 @@ public class BookingServiceImpl implements BookingService {
     private final SeatReservationRepository seatReservationRepository;
     private final ScreenTimeRepository screenTimeRepository;
     private final UserRepository userRepository;
+    private final PromoCodeRepository promoCodeRepository;
 
     @Override
     @Transactional
@@ -49,7 +50,29 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        // 4. Create Booking
+        // 4. Verify Promo Code and calculate expected total
+        double expectedTotal = (screenTime.getTicketPrice() * request.getSeatNumbers().size()) + 1.99;
+        
+        if (request.getPromoCode() != null && !request.getPromoCode().trim().isEmpty()) {
+            PromoCode promoCode = promoCodeRepository.findByCode(request.getPromoCode().trim().toUpperCase())
+                    .orElseThrow(() -> new RuntimeException("Invalid promo code"));
+                    
+            promoCode.updateStatusIfExpired();
+            promoCodeRepository.save(promoCode); // Persist status update if any
+            
+            if (!promoCode.isValid()) {
+                throw new RuntimeException("Promo code is no longer valid or has expired");
+            }
+            
+            expectedTotal = promoCode.applyDiscount(expectedTotal);
+        }
+
+        // Verify total amount matches (allow tiny delta for float math)
+        if (Math.abs(expectedTotal - request.getTotalAmount()) > 0.05) {
+            throw new RuntimeException("Total amount mismatch. Expected: " + String.format("%.2f", expectedTotal) + ", but got: " + request.getTotalAmount());
+        }
+
+        // 5. Create Booking
         String bookingRef = "BKG-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         Booking booking = Booking.builder()
                 .bookingReference(bookingRef)

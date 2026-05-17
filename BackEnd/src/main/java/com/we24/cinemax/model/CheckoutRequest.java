@@ -10,6 +10,7 @@ public class CheckoutRequest {
     private Long screenTimeId;
     private List<String> seatNumbers;
     private Double totalAmount;
+    private String promoCode;
     
     // Guest info (optional if logged in)
     private String guestName;
