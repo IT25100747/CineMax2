@@ -105,6 +105,7 @@ public class SecurityConfig {
                                 "/api/screentimes",
                                 "/api/screentimes/**",
                                 "/api/bookings/checkout",
+                                "/api/bookings/*",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"

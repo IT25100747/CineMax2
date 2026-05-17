@@ -16,4 +16,5 @@ public class MyTicketResponse {
     private String screenType;
     private List<String> seats;
     private Double totalPaid;
+    private String qrCodeData;
 }

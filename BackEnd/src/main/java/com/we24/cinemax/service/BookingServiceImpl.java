@@ -122,4 +122,38 @@ public class BookingServiceImpl implements BookingService {
                     .build();
         }).collect(Collectors.toList());
     }
+
+    @Override
+    public com.we24.cinemax.model.MyTicketResponse getBookingByReference(String bookingReference) {
+        Booking booking = bookingRepository.findByBookingReference(bookingReference)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        List<String> seats = seatReservationRepository.findByBookingId(booking.getId())
+                .stream()
+                .filter(res -> "RESERVED".equals(res.getStatus()))
+                .map(SeatReservation::getSeatNumber)
+                .collect(Collectors.toList());
+
+        String showDate = booking.getScreenTime().getShowDate() != null ? booking.getScreenTime().getShowDate().toString() : "";
+        String showTime = booking.getScreenTime().getShowTime() != null ? booking.getScreenTime().getShowTime().toString() : "";
+        String hallName = "Hall " + booking.getScreenTime().getScreenNumber();
+        String screenType = "IMAX";
+        String movieName = booking.getScreenTime().getMovie().getMovieName();
+
+        String qrData = String.format("%s | Seats: %s | Booking: %s | %s | %s %s",
+                hallName, String.join(", ", seats), booking.getBookingReference(), movieName, showDate, showTime);
+
+        return com.we24.cinemax.model.MyTicketResponse.builder()
+                .bookingId(booking.getBookingReference())
+                .movieName(movieName)
+                .moviePoster(booking.getScreenTime().getMovie().getPosterUrl())
+                .showDate(showDate)
+                .showTime(showTime)
+                .hallName(hallName)
+                .screenType(screenType)
+                .seats(seats)
+                .totalPaid(booking.getTotalAmount())
+                .qrCodeData(qrData)
+                .build();
+    }
 }

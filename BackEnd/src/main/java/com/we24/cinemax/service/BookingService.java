@@ -8,4 +8,5 @@ import java.util.List;
 public interface BookingService {
     CheckoutResponse processBooking(CheckoutRequest request, String userEmail);
     List<MyTicketResponse> getMyTickets(String gmail);
+    MyTicketResponse getBookingByReference(String bookingReference);
 }

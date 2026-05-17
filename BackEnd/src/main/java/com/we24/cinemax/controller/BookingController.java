@@ -51,4 +51,13 @@ public class BookingController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/{reference}")
+    public ResponseEntity<?> getBookingByReference(@PathVariable String reference) {
+        try {
+            return ResponseEntity.ok(bookingService.getBookingByReference(reference));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
