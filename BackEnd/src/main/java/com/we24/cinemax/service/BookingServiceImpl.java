@@ -3,14 +3,14 @@ package com.we24.cinemax.service;
 import com.we24.cinemax.entity.*;
 import com.we24.cinemax.model.CheckoutRequest;
 import com.we24.cinemax.model.CheckoutResponse;
+import com.we24.cinemax.model.UpdateSeatsRequest;
 import com.we24.cinemax.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -180,5 +180,95 @@ public class BookingServiceImpl implements BookingService {
                 .movieStatus(booking.getScreenTime().getMovie().getStatus())
                 .qrCodeData(qrData)
                 .build();
+    }
+    @Override
+    public Map<String, Object> getAvailableSeats(String bookingReference, String userEmail) {
+        Booking booking = bookingRepository.findByBookingReference(bookingReference)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Ownership check
+        if (booking.getUser() == null || !booking.getUser().getGmail().equalsIgnoreCase(userEmail)) {
+            throw new RuntimeException("Access denied: This booking does not belong to you");
+        }
+
+        Long screenTimeId = booking.getScreenTime().getId();
+
+        // All reservations for this showtime
+        List<SeatReservation> allReservations = seatReservationRepository.findByScreenTimeId(screenTimeId);
+
+        // Seats reserved by THIS booking
+        List<SeatReservation> myReservations = seatReservationRepository.findByBookingId(booking.getId());
+        List<String> mySeats = myReservations.stream()
+                .filter(r -> "RESERVED".equals(r.getStatus()))
+                .map(SeatReservation::getSeatNumber)
+                .collect(Collectors.toList());
+
+        // Seats reserved by OTHER bookings (blocked)
+        List<String> otherReservedSeats = allReservations.stream()
+                .filter(r -> "RESERVED".equals(r.getStatus()))
+                .filter(r -> !r.getBooking().getId().equals(booking.getId()))
+                .map(SeatReservation::getSeatNumber)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("bookingReference", bookingReference);
+        result.put("screenTimeId", screenTimeId);
+        result.put("currentSeats", mySeats);
+        result.put("reservedByOthers", otherReservedSeats);
+        result.put("ticketPrice", booking.getScreenTime().getTicketPrice());
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public com.we24.cinemax.model.MyTicketResponse updateSeats(String bookingReference, UpdateSeatsRequest request, String userEmail) {
+        Booking booking = bookingRepository.findByBookingReference(bookingReference)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Ownership check
+        if (booking.getUser() == null || !booking.getUser().getGmail().equalsIgnoreCase(userEmail)) {
+            throw new RuntimeException("Access denied: This booking does not belong to you");
+        }
+
+        List<String> newSeats = request.getNewSeats();
+        if (newSeats == null || newSeats.isEmpty()) {
+            throw new RuntimeException("Please select at least one seat");
+        }
+        if (newSeats.size() != seatReservationRepository.findByBookingId(booking.getId()).stream()
+                .filter(r -> "RESERVED".equals(r.getStatus())).count()) {
+            throw new RuntimeException("You must select the same number of seats as originally booked");
+        }
+
+        // Check none of the new seats are reserved by another booking
+        List<SeatReservation> allForShowtime = seatReservationRepository.findByScreenTimeId(booking.getScreenTime().getId());
+        List<String> reservedByOthers = allForShowtime.stream()
+                .filter(r -> "RESERVED".equals(r.getStatus()))
+                .filter(r -> !r.getBooking().getId().equals(booking.getId()))
+                .map(SeatReservation::getSeatNumber)
+                .collect(Collectors.toList());
+
+        for (String seat : newSeats) {
+            if (reservedByOthers.contains(seat)) {
+                throw new RuntimeException("Seat " + seat + " is already reserved by another booking");
+            }
+        }
+
+        // Release old seats (delete them)
+        List<SeatReservation> oldReservations = seatReservationRepository.findByBookingId(booking.getId());
+        seatReservationRepository.deleteAll(oldReservations);
+
+        // Reserve new seats
+        for (String seatNum : newSeats) {
+            SeatReservation reservation = SeatReservation.builder()
+                    .booking(booking)
+                    .screenTime(booking.getScreenTime())
+                    .seatNumber(seatNum)
+                    .status("RESERVED")
+                    .build();
+            seatReservationRepository.save(reservation);
+        }
+
+        // Return updated ticket
+        return getBookingByReference(bookingReference);
     }
 }
