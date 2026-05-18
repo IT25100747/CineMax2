@@ -133,6 +133,8 @@ public class BookingServiceImpl implements BookingService {
             String screenType = "IMAX"; 
 
             return com.we24.cinemax.model.MyTicketResponse.builder()
+                    .internalBookingId(booking.getId())
+                    .movieId(booking.getScreenTime().getMovie().getId())
                     .bookingId(booking.getBookingReference())
                     .movieName(booking.getScreenTime().getMovie().getMovieName())
                     .moviePoster(booking.getScreenTime().getMovie().getPosterUrl())
@@ -168,6 +170,8 @@ public class BookingServiceImpl implements BookingService {
                 hallName, String.join(", ", seats), booking.getBookingReference(), movieName, showDate, showTime);
 
         return com.we24.cinemax.model.MyTicketResponse.builder()
+                .internalBookingId(booking.getId())
+                .movieId(booking.getScreenTime().getMovie().getId())
                 .bookingId(booking.getBookingReference())
                 .movieName(movieName)
                 .moviePoster(booking.getScreenTime().getMovie().getPosterUrl())

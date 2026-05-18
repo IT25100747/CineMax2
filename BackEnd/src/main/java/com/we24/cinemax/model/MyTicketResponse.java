@@ -7,7 +7,9 @@ import java.util.List;
 @Data
 @Builder
 public class MyTicketResponse {
-    private String bookingId;
+    private Long internalBookingId;  // Internal DB id for review linking
+    private Long movieId;            // For review API calls
+    private String bookingId;        // Booking reference string
     private String movieName;
     private String moviePoster;
     private String showDate;

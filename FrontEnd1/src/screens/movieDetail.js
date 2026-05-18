@@ -449,50 +449,51 @@ function renderMovieDetail() {
       </div>
     </div>
 
-    <!-- Showtime Section -->
+    <!-- Showtime / Reviews Tabs -->
     <div class="max-w-5xl mx-auto px-4 py-10">
 
-      <h2 class="text-2xl font-bold mb-5">
-        Select Showtime
-      </h2>
-
-      <div class="flex gap-3 overflow-x-auto pb-3 mb-8">
-        ${
-          dateOptions.length
-            ? dates
-            : '<p class="text-white/50 text-sm">No showtimes scheduled for this movie yet.</p>'
-        }
+      <!-- Tab Buttons -->
+      <div class="flex items-center gap-3 mb-8">
+        <button id="tabShowtime" onclick="switchTab('showtime')" class="px-5 py-2.5 rounded-xl font-bold text-sm transition-colors bg-red-600 text-white">Select Showtime</button>
+        <button id="tabReviews" onclick="switchTab('reviews')" class="px-5 py-2.5 rounded-xl font-bold text-sm transition-colors bg-white/5 border border-white/10 text-white/60 hover:text-white">Reviews</button>
       </div>
 
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        ${
-          showtimes.length
-            ? showtimes.map(show => `
-              <button
-                data-route="/seats/${show.id}"
-                class="text-left bg-[#1a1a24] hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl p-5 transition flex flex-col justify-between min-h-[140px]"
-              >
-                <div>
-                  <p class="font-bold text-2xl text-white">${safe(show.time)}</p>
-                  <p class="text-white/60 text-sm mt-1">${safe(show.hall)}</p>
-                  <div class="mt-3">
-                    <span class="inline-block bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full">${safe(show.format)}</span>
+      <!-- Showtime Panel -->
+      <div id="panelShowtime">
+        <div class="flex gap-3 overflow-x-auto pb-3 mb-8">
+          ${
+            dateOptions.length
+              ? dates
+              : '<p class="text-white/50 text-sm">No showtimes scheduled for this movie yet.</p>'
+          }
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          ${
+            showtimes.length
+              ? showtimes.map(show => `
+                <button
+                  data-route="/seats/${show.id}"
+                  class="text-left bg-[#1a1a24] hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl p-5 transition flex flex-col justify-between min-h-[140px]"
+                >
+                  <div>
+                    <p class="font-bold text-2xl text-white">${safe(show.time)}</p>
+                    <p class="text-white/60 text-sm mt-1">${safe(show.hall)}</p>
+                    <div class="mt-3"><span class="inline-block bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full">${safe(show.format)}</span></div>
                   </div>
-                </div>
-                <div class="mt-5 flex items-center justify-between w-full">
-                  <span class="text-white/60 text-sm font-medium">${money(show.ticketPrice)}/seat</span>
-                  <span class="text-amber-500 text-sm flex items-center gap-1.5 font-semibold">
-                    ${icon('users')} ${show.availableSeats}
-                  </span>
-                </div>
-              </button>
-            `).join('')
-            : `
-              <div class="col-span-full text-white/45 border border-white/10 rounded-2xl p-8 text-center bg-[#15151a]">
-                No showtimes for this date.
-              </div>
-            `
-        }
+                  <div class="mt-5 flex items-center justify-between w-full">
+                    <span class="text-white/60 text-sm font-medium">${money(show.ticketPrice)}/seat</span>
+                    <span class="text-amber-500 text-sm flex items-center gap-1.5 font-semibold">${icon('users')} ${show.availableSeats}</span>
+                  </div>
+                </button>
+              `).join('')
+              : '<div class="col-span-full text-white/45 border border-white/10 rounded-2xl p-8 text-center bg-[#15151a]">No showtimes for this date.</div>'
+          }
+        </div>
+      </div>
+
+      <!-- Reviews Panel -->
+      <div id="panelReviews" class="hidden">
+        <div id="reviewsList"><div class="text-center text-white/40 py-12">Loading reviews...</div></div>
       </div>
     </div>
 
@@ -500,6 +501,37 @@ function renderMovieDetail() {
   `;
 
   renderLayout(content);
+
+  // Tab switching + reviews loader
+  window.switchTab = async function(tab) {
+    const isShowtime = tab === 'showtime';
+    document.getElementById('panelShowtime').classList.toggle('hidden', !isShowtime);
+    document.getElementById('panelReviews').classList.toggle('hidden', isShowtime);
+    document.getElementById('tabShowtime').className = `px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${isShowtime ? 'bg-red-600 text-white' : 'bg-white/5 border border-white/10 text-white/60 hover:text-white'}`;
+    document.getElementById('tabReviews').className = `px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${!isShowtime ? 'bg-yellow-500 text-black' : 'bg-white/5 border border-white/10 text-white/60 hover:text-white'}`;
+
+    if (!isShowtime) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/reviews/movie/${detailContext.movieId}`);
+        const reviews = res.ok ? await res.json() : [];
+        document.getElementById('reviewsList').innerHTML = reviews.length
+          ? reviews.map(r => {
+              const stars = Array.from({length:5},(_,i)=>`<span class="${i<r.rating?'text-yellow-400':'text-white/20'}">★</span>`).join('');
+              const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '';
+              return `<div class="bg-[#15151a] border border-white/10 rounded-2xl p-5 mb-4">
+                <div class="flex items-start justify-between mb-2">
+                  <div>
+                    <p class="font-bold text-white">${r.userName||'Anonymous'}</p>
+                    <div class="flex items-center gap-2 mt-1"><span class="text-lg">${stars}</span><span class="text-xs text-white/40">${date}</span></div>
+                  </div>
+                </div>
+                <p class="text-white/70 text-sm leading-relaxed mt-2">${r.reviewText||''}</p>
+              </div>`;
+            }).join('')
+          : '<div class="text-center text-white/40 py-12 border border-white/10 rounded-2xl">No reviews yet. Be the first to review this movie!</div>';
+      } catch(_) { document.getElementById('reviewsList').innerHTML = '<div class="text-red-400 py-8 text-center">Failed to load reviews</div>'; }
+    }
+  };
 
   /**
    * Date Button Events
@@ -513,7 +545,6 @@ function renderMovieDetail() {
 
   /**
    * Route Button Events
-   * VERY IMPORTANT
    */
   document.querySelectorAll('[data-route]').forEach(button => {
     button.addEventListener('click', () => {

@@ -107,6 +107,7 @@ public class SecurityConfig {
                                 "/api/bookings/checkout",
                                 "/api/bookings/*",
                                 "/api/promo-codes/validate",
+                                "/api/reviews/movie/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
