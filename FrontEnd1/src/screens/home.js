@@ -18,14 +18,7 @@ export function homePage() {
           <p class="mt-5 text-white/60 max-w-xl leading-relaxed">
             Browse movies, choose showtimes, pick your seats, and check out in a modern movie booking flow.
           </p>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <button id="bookFeaturedBtn" class="bg-red-600 hover:bg-red-500 rounded-xl px-6 py-3 font-semibold">
-              Book Featured
-            </button>
-            <button class="border border-white/15 hover:bg-white/10 rounded-xl px-6 py-3 font-semibold">
-              View Offers
-            </button>
-          </div>
+
         </div>
 
         <div id="featuredMovieBox" class="relative hidden md:block">
@@ -118,16 +111,10 @@ function convertStatus(status) {
 
 function renderFeatured(featured) {
   const box = document.getElementById('featuredMovieBox');
-  const button = document.getElementById('bookFeaturedBtn');
-
   if (!featured) {
     box.innerHTML = '';
-    button.disabled = true;
-    button.classList.add('opacity-50', 'cursor-not-allowed');
     return;
   }
-
-  button.setAttribute('data-route', `/movie/${featured.id}`);
 
   box.innerHTML = `
     <img

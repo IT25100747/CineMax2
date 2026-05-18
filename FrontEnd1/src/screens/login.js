@@ -50,8 +50,7 @@ export function loginPage() {
               <input type="checkbox" id="remember" class="w-4 h-4 rounded bg-white/10 border-white/20 text-red-600 focus:ring-red-500">
               <span class="text-sm text-white/60">Remember me</span>
             </label>
-            <button type="button" class="text-sm text-red-400 hover:text-red-300">Forgot password?</button>
-          </div>
+            </div>
           
           <div id="loginError" class="hidden text-red-400 text-sm text-center p-3 bg-red-500/10 border border-red-500/20 rounded-xl"></div>
           
