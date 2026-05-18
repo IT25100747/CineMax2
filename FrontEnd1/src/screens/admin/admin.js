@@ -781,7 +781,7 @@ export async function adminPage(page = 'dashboard') {
             ${navItem('movies', 'Movies', page)}
             ${navItem('screenTimes', 'Screen Times', page)}
             ${navItem('bookings', 'Bookings', page)}
-            ${navItem('halls', 'Halls', page)}
+           <!-- ${navItem('halls', 'Halls', page)}-->
             ${navItem('promoCodes', 'Promo Codes', page)}
           </nav>
 

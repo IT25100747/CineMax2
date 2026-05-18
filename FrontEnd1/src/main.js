@@ -84,6 +84,7 @@ import { confirmationPage } from './screens/confirmation.js';
 import { notFound } from './screens/notFound.js';
 import { loginPage } from './screens/login.js';
 import { registerPage } from './screens/register.js';
+import { profilePage } from './screens/profile.js';
 
 /**
  * Main render function - routes to appropriate page based on URL
@@ -141,6 +142,12 @@ function render() {
   // Register Page
   if (parts[0] === 'register') {
     registerPage();
+    return;
+  }
+
+  // Profile Page
+  if (parts[0] === 'profile') {
+    profilePage();
     return;
   }
 
