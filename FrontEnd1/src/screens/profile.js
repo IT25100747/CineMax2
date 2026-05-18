@@ -178,7 +178,9 @@ export async function profilePage() {
       if (!res.ok) throw new Error('Failed to delete account');
       
       localStorage.removeItem('token');
+      localStorage.removeItem('role');
       localStorage.removeItem('userRole');
+      window.location.hash = '#/';
       window.location.reload();
     } catch (error) {
       alert(error.message);

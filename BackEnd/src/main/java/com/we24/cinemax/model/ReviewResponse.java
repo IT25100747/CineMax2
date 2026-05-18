@@ -23,7 +23,7 @@ public class ReviewResponse {
                 .id(review.getId())
                 .movieId(review.getMovie().getId())
                 .movieName(review.getMovie().getMovieName())
-                .userName(review.getUser().getFullName())
+                .userName(review.getUser() != null ? review.getUser().getFullName() : "Anonymous")
                 .rating(review.getRating())
                 .reviewText(review.getReviewText())
                 .createdAt(review.getCreatedAt())
